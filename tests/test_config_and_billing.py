@@ -43,15 +43,21 @@ class TestConfigAndBilling(unittest.TestCase):
         self.assertEqual(config.database_url, "postgresql://user:pass@localhost/db")
         self.assertEqual(config.payment_api_key, "prod_secret_token_123")
 
+   
     def test_fail_fast_on_missing_database_url(self):
         """Uji sifat Fail-Fast jika DATABASE_URL tidak diset"""
-        os.environ.pop("DATABASE_URL", None)
-        os.environ["PAYMENT_API_KEY"] = "token_abc"
+        from unittest.mock import patch
 
-        with self.assertRaises(ValueError) as ctx:
-            AppSettings.load_from_env()
+        with patch.dict(os.environ, {
+            "APP_ENV": "testing",
+            "APP_PORT": "8000",
+            "PAYMENT_API_KEY": "token_abc",
+        }, clear=True):
+            with self.assertRaises(ValueError) as ctx:
+                AppSettings.load_from_env(env_file=".env.test-missing")
 
-        self.assertIn("DATABASE_URL", str(ctx.exception))
+            self.assertIn("DATABASE_URL", str(ctx.exception))
+
 
     def test_fail_fast_on_invalid_port(self):
         """Uji sifat Fail-Fast jika port bukan integer valid"""
